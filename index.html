@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IMS Image Converter — Maximum-effort WebP, JPG &amp; PNG</title>
+    <meta
+      name="description"
+      content="Convert HEIC, AVIF, PNG, JPG and WebP images entirely in your browser. Maximum-effort WebP encoding with ImageMagick WebAssembly. No uploads, no servers."
+    />
+    <meta name="theme-color" content="#111113" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="IMS Image Converter — Maximum-effort WebP" />
+    <meta
+      property="og:description"
+      content="Pro-grade image compression that stays on your device. HEIC/AVIF in, WebP method 6 out. Powered by ImageMagick WebAssembly."
+    />
+    <meta property="og:image" content="/ims-footer.png" />
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="/">
+          <img
+            class="brand-logo"
+            src="/ims-header.png"
+            alt="Innovative Media Stop (IMS)"
+            width="305"
+            height="161"
+          />
+          <span class="brand-divider" aria-hidden="true"></span>
+          <span class="brand-text">
+            <span class="brand-eyebrow">Innovative Media Stop</span>
+            <span class="brand-name">Image Converter</span>
+            <span class="brand-sub">Maximum-effort WebP</span>
+          </span>
+        </a>
+
+        <button
+          type="button"
+          class="engine-chip"
+          id="engineChip"
+          data-state="loading"
+          title="The ImageMagick WebAssembly engine loads once, then stays cached in your browser."
+          aria-live="polite"
+        >
+          <span class="engine-dot" aria-hidden="true"></span>
+          <span id="engineText">Starting engine…</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="converter-card" aria-labelledby="converter-title">
+        <p class="sr-only" id="converter-title">Image converter</p>
+
+        <form id="convertForm" novalidate>
+          <div
+            class="dropzone"
+            id="dropzone"
+            role="button"
+            tabindex="0"
+          >
+            <input
+              type="file"
+              id="fileInput"
+              hidden
+              accept=".jpg,.jpeg,.png,.webp,.avif,.heic,.heif,image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif"
+            />
+            <span class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 16V4m0 0 4 4m-4-4-4 4" />
+                <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+              </svg>
+            </span>
+            <p class="dropzone-title">Drop an image here <span>or click to browse</span></p>
+            <p class="dropzone-hint" id="dropzoneHint">JPG · PNG · HEIC · WebP · AVIF — up to 64 MB</p>
+          </div>
+
+          <div class="file-card" id="fileCard" hidden>
+            <div class="file-thumb">
+              <img id="filePreview" alt="" width="52" height="52" />
+              <span class="file-badge" id="fileBadge" hidden>HEIC</span>
+            </div>
+            <div class="file-info">
+              <p class="file-name" id="fileName"></p>
+              <p class="file-meta" id="fileMeta"></p>
+            </div>
+            <button
+              type="button"
+              class="icon-btn"
+              id="removeFile"
+              aria-label="Remove selected image"
+              title="Remove image"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="controls">
+            <label class="field" for="formatSelect">
+              <span class="field-label">Convert to</span>
+              <span class="select-wrap">
+                <select id="formatSelect" name="format"></select>
+                <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+            </label>
+
+            <p class="quality-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z" />
+              </svg>
+              <span>
+                <strong>WebP method 6</strong> is the slowest, highest-effort setting.
+                PNG sources stay lossless; everything else uses quality 80.
+                EXIF/GPS metadata is stripped after orientation is applied.
+              </span>
+            </p>
+          </div>
+
+          <button type="submit" class="primary-btn" id="convertBtn" disabled>
+            <span class="spinner" id="spinner" aria-hidden="true" hidden></span>
+            <svg class="btn-icon" id="btnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+              <path d="M5 21h14" />
+            </svg>
+            <span id="btnLabel">Convert image</span>
+          </button>
+
+          <p class="status" id="status" role="status" aria-live="polite"></p>
+          <p class="error" id="error" role="alert" hidden></p>
+        </form>
+
+        <div class="result" id="result" tabindex="-1" hidden>
+          <div class="result-head">
+            <span class="result-check" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m4.5 12.5 5 5 10-11" />
+              </svg>
+            </span>
+            <div>
+              <h2>Conversion complete</h2>
+              <p class="result-name" id="resultName"></p>
+            </div>
+          </div>
+
+          <div class="result-preview" id="resultPreviewWrap">
+            <img id="resultImage" alt="Preview of the converted image" />
+          </div>
+
+          <dl class="stats">
+            <div>
+              <dt>Original</dt>
+              <dd id="statOriginal">—</dd>
+            </div>
+            <div>
+              <dt>Converted</dt>
+              <dd id="statConverted">—</dd>
+            </div>
+            <div>
+              <dt id="statChangeLabel">Saved</dt>
+              <dd id="statChange" class="stat-change">—</dd>
+            </div>
+          </dl>
+
+          <p class="result-detail" id="resultDetail"></p>
+
+          <div class="result-actions">
+            <a class="primary-btn" id="downloadAgain" download>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                <path d="M5 21h14" />
+              </svg>
+              Download again
+            </a>
+            <button type="button" class="ghost-btn" id="convertAnother">Convert another</button>
+          </div>
+          <p class="auto-note" id="autoNote">Your download started automatically. Check your browser’s downloads.</p>
+        </div>
+      </section>
+
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow"><span class="pulse-dot" aria-hidden="true"></span> 100% client-side · WebAssembly</p>
+        <h1 id="page-title">Maximum-quality <span class="accent">WebP</span>.<br />Minimum bytes.</h1>
+        <p class="lede">
+          A pro-grade ImageMagick engine runs inside your browser tab. Drop in a HEIC, AVIF, PNG,
+          JPG or WebP file and get a fully optimised image back — with WebP effort pinned to
+          <strong>method&nbsp;6</strong>. Your files never leave this device.
+        </p>
+        <ul class="hero-badges" aria-label="Highlights">
+          <li>HEIC + AVIF decoding</li>
+          <li>WebP method 6</li>
+          <li>Zero uploads</li>
+        </ul>
+      </section>
+
+      <section class="features" aria-labelledby="features-title">
+        <h2 class="sr-only" id="features-title">Why use this converter</h2>
+        <article class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3 5 6v5c0 4.6 3 8.4 7 10 4-1.6 7-5.4 7-10V6l-7-3Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </span>
+          <h3>Private by design</h3>
+          <p>No uploads, no server, no analytics. The image is decoded and re-encoded inside this tab.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m12 0h4M2 15h4m12 0h4" />
+            </svg>
+          </span>
+          <h3>Real max effort</h3>
+          <p>WebP <code>method=6</code> through libwebp — settings a canvas export simply cannot reach.</p>
+        </article>
+        <article class="feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 17 9 12l3 3 4-6 4 4" />
+              <path d="M4 21h16" />
+              <path d="M20 7V4h-3" />
+            </svg>
+          </span>
+          <h3>Phone photos welcome</h3>
+          <p>HEIC from iPhone and AVIF from modern cameras decode natively in WebAssembly.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <div class="footer-brand">
+          <img
+            class="footer-logo"
+            src="/ims-footer.png"
+            alt="iMS — innovative media stop"
+            width="673"
+            height="361"
+          />
+        </div>
+        <div class="footer-meta">
+          <p>© <span id="year">2026</span> Innovative Media Stop (IMS)</p>
+          <p>Powered by ImageMagick WebAssembly · WebP method 6</p>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

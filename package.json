@@ -1,0 +1,24 @@
+{
+  "name": "ims-image-converter",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "100% client-side image converter powered by ImageMagick WebAssembly. Maximum-effort WebP (method 6), with HEIC and AVIF decoding.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke-test.mjs",
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name ims-image-converter"
+  },
+  "dependencies": {
+    "@imagemagick/magick-wasm": "^0.0.46",
+    "@jsquash/webp": "^1.5.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}
