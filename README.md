@@ -28,6 +28,14 @@ works.
   reused for every subsequent conversion. The first visit compiles it once; the
   header shows download and compile progress.
 
+## Screenshots
+
+Desktop and mobile layouts, captured from the live Cloudflare Pages deployment.
+
+| Desktop | Mobile |
+| :---: | :---: |
+| <img src="docs/screenshot-desktop.png" alt="IMS Image Converter on desktop" width="620"> | <img src="docs/screenshot-mobile.png" alt="IMS Image Converter on mobile" width="210"> |
+
 ## Conversion rules
 
 | Output | Source | Encoder settings |
@@ -87,6 +95,9 @@ ims-image-converter/
 ├─ .nvmrc                      # Node 22
 ├─ vite.config.js
 ├─ README.md
+├─ docs/
+│  ├─ screenshot-desktop.png
+│  └─ screenshot-mobile.png
 ├─ public/
 │  ├─ _headers                 # Cloudflare Pages caching + security headers
 │  ├─ favicon.svg
