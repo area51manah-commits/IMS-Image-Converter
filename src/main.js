@@ -60,6 +60,10 @@ const state = {
   engineStatus: 'loading',
   busy: false,
   file: null,
+  fileBlob: null,
+  fileReadPromise: null,
+  fileReadError: null,
+  fileToken: 0,
   inputUrl: null,
   resultUrl: null,
   requestCounter: 0,
@@ -277,7 +281,7 @@ function setEngineState(status, info = {}) {
 /*  Conversion                                                                */
 /* -------------------------------------------------------------------------- */
 
-function convertInWorker(file, target) {
+function convertInWorker(source, target) {
   if (!state.worker) {
     return Promise.reject(
       new Error('The compression engine is not running. Reload it and try again.'),
@@ -287,7 +291,7 @@ function convertInWorker(file, target) {
   const id = `job-${++state.requestCounter}`;
 
   return new Promise((resolve, reject) => {
-    file
+    source
       .arrayBuffer()
       .then((buffer) => {
         if (!state.worker) {
@@ -338,7 +342,19 @@ async function runConversion() {
   let succeeded = false;
 
   try {
-    const result = await convertInWorker(file, target);
+    // The bytes were snapshotted when the file was picked. On Android this
+    // avoids NotReadableError when the picker's content:// permission expires.
+    if (state.fileReadPromise) {
+      await state.fileReadPromise;
+    }
+    if (!state.fileBlob) {
+      throw (
+        state.fileReadError ||
+        new Error('The selected image could not be read. Please choose it again.')
+      );
+    }
+
+    const result = await convertInWorker(state.fileBlob, target);
     const blob = new Blob([result.buffer], { type: result.mimeType });
 
     showResult({
@@ -357,9 +373,8 @@ async function runConversion() {
     setStatus('');
     showError(humanizeError(error));
     if (isUnreadableFileError(error)) {
-      // The browser revoked access to the picked file (common on Android
-      // after the input value is reset). Drop the stale reference and let
-      // the user pick it again.
+      // Android content:// URIs can lose permission after the picker closes.
+      // Drop the stale reference and let the user pick again.
       clearSelectedFile();
     }
   } finally {
@@ -520,8 +535,27 @@ function selectFile(file) {
     state.inputUrl = null;
   }
 
+  const token = ++state.fileToken;
   state.file = file;
+  state.fileBlob = null;
+  state.fileReadError = null;
   state.inputUrl = URL.createObjectURL(file);
+
+  // Snapshot the file immediately. Android commonly ties the picker's
+  // content:// URI permission to a short-lived reference; reading it when
+  // Convert is pressed later can fail with NotReadableError.
+  state.fileReadPromise = file
+    .arrayBuffer()
+    .then((buffer) => {
+      if (token !== state.fileToken) return;
+      state.fileBlob = new Blob([buffer], {
+        type: file.type || 'application/octet-stream',
+      });
+    })
+    .catch((error) => {
+      if (token !== state.fileToken) return;
+      state.fileReadError = error;
+    });
 
   const heic = isHeicFile(file);
 
@@ -564,12 +598,16 @@ function selectFile(file) {
 }
 
 function clearSelectedFile() {
+  state.fileToken += 1;
+  state.file = null;
+  state.fileBlob = null;
+  state.fileReadPromise = null;
+  state.fileReadError = null;
+
   if (state.inputUrl) {
     URL.revokeObjectURL(state.inputUrl);
     state.inputUrl = null;
   }
-
-  state.file = null;
 
   els.filePreview.removeAttribute('src');
   els.filePreview.onerror = null;
